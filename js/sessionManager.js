@@ -8,6 +8,7 @@ let trackPlacements = {}; // Track name -> placement (1-12)
 let trackNotes = {}; // Track name -> notes
 let savedSessions = {}; // Session name -> session data
 let sessionCounter = 1; // For default session names
+let trackVictoryCelebrated = new Set(); // Track which tracks have already had victory celebration
 
 // Temporary unsaved session for non-session mode
 let tempSession = {
@@ -16,11 +17,27 @@ let tempSession = {
     completedTracks: new Set()
 };
 
+// Make tempSession globally accessible
+window.tempSession = tempSession;
+
 // Make variables globally accessible
 window.sessionMode = sessionMode;
 window.currentSession = currentSession;
 window.trackPlacements = trackPlacements;
 window.trackNotes = trackNotes;
+
+// Sync local variables with global ones on initialization
+function syncGlobalVariables() {
+    if (window.trackPlacements) {
+        trackPlacements = {...window.trackPlacements};
+    }
+    if (window.trackNotes) {
+        trackNotes = {...window.trackNotes};
+    }
+}
+
+// Make sync function globally accessible
+window.syncGlobalVariables = syncGlobalVariables;
 
 // Load sessions from localStorage
 function loadSessionsFromStorage() {
@@ -64,23 +81,21 @@ function createNewSession() {
     savedSessions[sessionName] = {
         name: sessionName,
         date: new Date().toISOString(),
-        placements: currentSession ? {} : {...trackPlacements},
-        notes: currentSession ? {} : {...trackNotes},
+        placements: currentSession ? {} : {...window.trackPlacements},
+        notes: currentSession ? {} : {...window.trackNotes},
         completedTracks: currentSession ? new Set() : new Set(completedTrackNames)
     };
     
     // If we inherited from current UI state (no active session), reset UI to empty state
     if (!currentSession) {
         // Reset the current UI state to empty
-        trackPlacements = {};
-        trackNotes = {};
-        window.trackPlacements = trackPlacements;
-        window.trackNotes = trackNotes;
+        window.trackPlacements = {};
+        window.trackNotes = {};
         completedTrackNames = new Set();
         completedTracks = 0;
         
         // Create new empty temp session
-        tempSession = {
+        window.tempSession = {
             placements: {},
             notes: {},
             completedTracks: new Set()
@@ -114,13 +129,11 @@ function selectSession(sessionName) {
         currentSession = null;
         window.currentSession = currentSession;
         
-        trackPlacements = {...tempSession.placements};
-        trackNotes = {...tempSession.notes};
-        window.trackPlacements = trackPlacements;
-        window.trackNotes = trackNotes;
+        window.trackPlacements = {...window.tempSession.placements};
+        window.trackNotes = {...window.tempSession.notes};
         
         // Keep starredTracks global - don't load from temp session
-        completedTrackNames = new Set(tempSession.completedTracks);
+        completedTrackNames = new Set(window.tempSession.completedTracks);
         completedTracks = completedTrackNames.size;
         
         // Update UI
@@ -131,10 +144,10 @@ function selectSession(sessionName) {
     
     // If no session was active, save current state to temp session
     if (!currentSession) {
-        tempSession.placements = {...trackPlacements};
-        tempSession.notes = {...trackNotes};
+        window.tempSession.placements = {...trackPlacements};
+        window.tempSession.notes = {...trackNotes};
         // Don't save starredTracks to temp session - they are global
-        tempSession.completedTracks = new Set(completedTrackNames);
+        window.tempSession.completedTracks = new Set(completedTrackNames);
     } else {
         // Save current session before switching
         saveCurrentSession();
@@ -145,10 +158,8 @@ function selectSession(sessionName) {
     window.currentSession = currentSession;
     
     // Load session data
-    trackPlacements = sessionData.placements || {};
-    trackNotes = sessionData.notes || {};
-    window.trackPlacements = trackPlacements;
-    window.trackNotes = trackNotes;
+    window.trackPlacements = sessionData.placements || {};
+    window.trackNotes = sessionData.notes || {};
     
     // Don't load starred tracks from session - they are global
     
@@ -168,8 +179,8 @@ function selectSession(sessionName) {
 function saveCurrentSession() {
     if (!currentSession || !savedSessions[currentSession]) return;
     
-    savedSessions[currentSession].placements = {...trackPlacements};
-    savedSessions[currentSession].notes = {...trackNotes};
+    savedSessions[currentSession].placements = {...window.trackPlacements};
+    savedSessions[currentSession].notes = {...window.trackNotes};
     // Don't save starredTracks to session - they are global
     savedSessions[currentSession].completedTracks = Array.from(completedTrackNames);
     savedSessions[currentSession].lastModified = new Date().toISOString();
@@ -211,7 +222,7 @@ function updateSessionsList() {
                     <button class="session-action-btn" onclick="event.stopPropagation(); deleteSession('${session.name}')" title="Delete">🗑️</button>
                 </div>
             </div>
-            <div class="session-stats-mini">${completedCount}/30 tracks completed | ${starredCount} favorites | Score: ${sessionScore}</div>
+            <div class="session-stats-mini">${completedCount}/12 tracks completed | ${starredCount} favorites | Score: ${sessionScore}</div>
             <div class="session-date">Created: ${date}</div>
         `;
         
@@ -383,21 +394,234 @@ function endSession() {
 
 // Session mode track selection (single click instead of double click)
 function selectPlacement(trackName, placement) {
-    trackPlacements[trackName] = placement;
-    window.trackPlacements = trackPlacements;
+    const previousPlacement = window.trackPlacements[trackName];
+    window.trackPlacements[trackName] = placement;
     
-    // Hide placement selector
-    const selector = document.getElementById(`placement-${trackName.replace(/\s+/g, '-')}`);
-    if (selector) {
-        selector.style.display = 'none';
+    // Reset victory celebration tracking if changing away from 1st place
+    if (previousPlacement === 1 && placement !== 1) {
+        trackVictoryCelebrated.delete(trackName);
     }
     
-    // Regenerate track items to update the placement button color and text
-    generateTrackItems();
+    // Hide placement selector
+    hidePlacementSelector();
+    
+    // Calculate and show score animation
+    const points = getPointsForPlacement(placement);
+    showScoreAnimation(trackName, points);
+    
+    // Animate score counter
+    animateScoreCounter();
+    
+    // Victory celebration for 1st place (only if not already celebrated)
+    if (placement === 1 && !trackVictoryCelebrated.has(trackName)) {
+        triggerVictoryCelebration(trackName);
+        trackVictoryCelebrated.add(trackName);
+    }
+    
+    // Update only the specific track item instead of regenerating all
+    updateTrackItemPlacement(trackName, placement);
     
     // Save session data
     saveCurrentSession();
+    
+    // Also save temp session if not in a saved session
+    if (!currentSession && typeof window.saveTempSession === 'function') {
+        // Update temp session with current data
+        window.tempSession.placements = {...window.trackPlacements};
+        window.tempSession.notes = {...window.trackNotes};
+        window.tempSession.completedTracks = new Set(completedTrackNames);
+        window.saveTempSession();
+    }
 }
+
+// Clear placement for a track
+function clearPlacement(trackName) {
+    delete window.trackPlacements[trackName];
+    
+    // Reset victory celebration tracking for this track
+    trackVictoryCelebrated.delete(trackName);
+    
+    // Hide placement selector
+    hidePlacementSelector();
+    
+    // Update only the specific track item instead of regenerating all
+    updateTrackItemPlacement(trackName, null);
+    
+    // Save session data
+    saveCurrentSession();
+    
+    // Also save temp session if not in a saved session
+    if (!currentSession && typeof window.saveTempSession === 'function') {
+        // Update temp session with current data
+        window.tempSession.placements = {...window.trackPlacements};
+        window.tempSession.notes = {...window.trackNotes};
+        window.tempSession.completedTracks = new Set(completedTrackNames);
+        window.saveTempSession();
+    }
+}
+
+// Victory celebration for 1st place
+function triggerVictoryCelebration(trackName) {
+    const trackItem = document.querySelector(`[data-track="${trackName}"]`);
+    if (!trackItem) return;
+    
+    // Add victory classes with crown animation
+    trackItem.classList.add('victory-celebration', 'victory-crown', 'crown-animate');
+    
+    // Create confetti
+    createConfetti(trackItem);
+    
+    // Remove celebration classes after animation
+    setTimeout(() => {
+        trackItem.classList.remove('victory-celebration', 'crown-animate');
+    }, 800);
+    
+    // Keep crown for 1st place
+    // Crown will be removed when placement is changed
+}
+
+// Create confetti effect
+function createConfetti(container) {
+    const confettiContainer = document.createElement('div');
+    confettiContainer.className = 'confetti-container';
+    document.body.appendChild(confettiContainer);
+    
+    // Create 100 confetti pieces for more celebration
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.animationDelay = Math.random() * 2 + 's';
+        confetti.style.animationDuration = (Math.random() * 1.5 + 2.5) + 's';
+        
+        // Add some variety to confetti shapes
+        if (Math.random() > 0.5) {
+            confetti.style.borderRadius = '50%'; // Some circular pieces
+        }
+        
+        confettiContainer.appendChild(confetti);
+    }
+    
+    // Remove confetti container after animation
+    setTimeout(() => {
+        if (confettiContainer.parentNode) {
+            confettiContainer.parentNode.removeChild(confettiContainer);
+        }
+    }, 5000);
+}
+
+// Show score animation popup
+function showScoreAnimation(trackName, points) {
+    const trackItem = document.querySelector(`[data-track="${trackName}"]`);
+    if (!trackItem) return;
+    
+    const scorePopup = document.createElement('div');
+    scorePopup.className = 'score-popup';
+    scorePopup.textContent = `+${points}`;
+    
+    // Set color based on points (higher points = better color)
+    if (points >= 12) {
+        scorePopup.style.color = '#FFD700'; // Gold for high scores
+        scorePopup.style.textShadow = '0 0 15px rgba(255, 215, 0, 0.8)';
+    } else if (points >= 8) {
+        scorePopup.style.color = '#4CAF50'; // Green for good scores
+        scorePopup.style.textShadow = '0 0 10px rgba(76, 175, 80, 0.8)';
+    } else {
+        scorePopup.style.color = '#2196F3'; // Blue for lower scores
+        scorePopup.style.textShadow = '0 0 10px rgba(33, 150, 243, 0.8)';
+    }
+    
+    // Position relative to the track item
+    const rect = trackItem.getBoundingClientRect();
+    scorePopup.style.position = 'fixed';
+    scorePopup.style.left = (rect.left + rect.width / 2) + 'px';
+    scorePopup.style.top = (rect.top + rect.height / 2) + 'px';
+    scorePopup.style.transform = 'translate(-50%, -50%)';
+    
+    document.body.appendChild(scorePopup);
+    
+    // Remove after animation
+    setTimeout(() => {
+        if (scorePopup.parentNode) {
+            scorePopup.parentNode.removeChild(scorePopup);
+        }
+    }, 2000);
+}
+
+// Animate score counter
+function animateScoreCounter() {
+    const scoreElement = document.getElementById('scoreValue');
+    const scoreTextElement = document.querySelector('.session-score');
+    
+    if (scoreElement) {
+        // Add animation class
+        scoreElement.classList.add('score-counter-animate');
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            scoreElement.classList.remove('score-counter-animate');
+        }, 600);
+    }
+    
+    if (scoreTextElement) {
+        // Add shake animation to score text
+        scoreTextElement.classList.add('score-text-shake');
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            scoreTextElement.classList.remove('score-text-shake');
+        }, 800);
+    }
+}
+
+// Update specific track item placement without regenerating all items
+function updateTrackItemPlacement(trackName, placement) {
+    const trackItem = document.querySelector(`[data-track="${trackName}"]`);
+    if (!trackItem) return;
+    
+    // Update placement button
+    const placementButton = trackItem.querySelector('.placement-button');
+    if (placementButton) {
+        if (placement) {
+            const ordinalSuffix = placement === 1 ? 'st' : placement === 2 ? 'nd' : placement === 3 ? 'rd' : 'th';
+            placementButton.innerHTML = `${placement}${ordinalSuffix}`;
+            placementButton.title = `${placement}${ordinalSuffix} Place`;
+            
+            // Set background color based on placement
+            if (placement === 1) {
+                placementButton.style.background = '#FFD700';
+                placementButton.style.color = '#000';
+            } else if (placement === 2) {
+                placementButton.style.background = '#C0C0C0';
+                placementButton.style.color = '#000';
+            } else if (placement === 3) {
+                placementButton.style.background = '#CD7F32';
+                placementButton.style.color = '#fff';
+            } else {
+                placementButton.style.background = '#8B4513';
+                placementButton.style.color = '#fff';
+            }
+        } else {
+            placementButton.innerHTML = '🏆';
+            placementButton.title = 'Set placement';
+            placementButton.style.background = '';
+            placementButton.style.color = '';
+        }
+    }
+    
+    // Update crown state (only add if not already present to avoid animation)
+    if (placement === 1) {
+        if (!trackItem.classList.contains('victory-crown')) {
+            trackItem.classList.add('victory-crown');
+        }
+    } else {
+        trackItem.classList.remove('victory-crown');
+    }
+    
+    // Update stats
+    updateStats();
+}
+
 
 function toggleNotes(trackName) {
     // Hide all placement selectors first
@@ -440,12 +664,54 @@ function showPlacementSelector(trackName) {
     // Hide all other placement selectors first
     document.querySelectorAll('.placement-selector').forEach(selector => {
         selector.style.display = 'none';
+        selector.classList.remove('show');
     });
     
+    const trackItem = document.querySelector(`[data-track="${trackName}"]`);
     const selector = document.getElementById(`placement-${trackName.replace(/\s+/g, '-')}`);
-    if (selector) {
+    
+    if (trackItem && selector) {
+        // Get track item position and size
+        const trackRect = trackItem.getBoundingClientRect();
+        
+        // Position selector to perfectly overlap the track card
+        selector.style.position = 'absolute';
+        selector.style.top = '0';
+        selector.style.left = '0';
+        selector.style.width = '100%';
+        selector.style.height = '100%';
+        selector.style.transform = 'none';
+        selector.style.zIndex = '1000';
         selector.style.display = 'flex';
+        selector.style.visibility = 'visible';
+        selector.style.opacity = '1';
+        
+        // Make the selector inherit the track card's position
+        trackItem.style.position = 'relative';
+        trackItem.appendChild(selector);
+        
+        // Trigger animation after display change
+        setTimeout(() => {
+            selector.classList.add('show');
+        }, 10);
     }
+}
+
+function hidePlacementSelector() {
+    // Hide all placement selectors
+    document.querySelectorAll('.placement-selector').forEach(selector => {
+        selector.classList.remove('show');
+        selector.style.visibility = 'hidden';
+        selector.style.opacity = '0';
+        setTimeout(() => {
+            selector.style.display = 'none';
+            // Move selector back to its original position in the track grid
+            const trackGrid = document.getElementById('trackGrid');
+            if (trackGrid && selector.parentNode !== trackGrid) {
+                trackGrid.appendChild(selector);
+            }
+        }, 300);
+    });
 }
 
 // Add click outside to close notes and placement selectors
@@ -457,6 +723,7 @@ document.addEventListener('click', function(event) {
     const clickedPlacementSelector = event.target.closest('.placement-selector');
     const clickedTextarea = event.target.tagName === 'TEXTAREA' && event.target.closest('.notes-section');
     const clickedSessionControlButton = event.target.closest('.session-control-button');
+    const clickedTrackItem = event.target.closest('.track-item');
     
     // Close notes if clicking outside notes-related elements
     if (!clickedNotesSection && !clickedNotesButton && !clickedTextarea && !clickedSessionControlButton) {
@@ -466,17 +733,62 @@ document.addEventListener('click', function(event) {
     }
     
     // Close placement selectors if clicking outside placement-related elements
-    if (!clickedPlacementSelector && !clickedPlacementButton && !clickedSessionControlButton) {
-        document.querySelectorAll('.placement-selector').forEach(selector => {
-            selector.style.display = 'none';
-        });
+    if (!clickedPlacementSelector && !clickedPlacementButton && !clickedSessionControlButton && !clickedTrackItem) {
+        hidePlacementSelector();
+    }
+});
+
+// Add keyboard support for placement selection
+document.addEventListener('keydown', function(event) {
+    // Check if any placement selector is open
+    const openSelector = document.querySelector('.placement-selector[style*="flex"]');
+    if (!openSelector) return;
+    
+    // Get the track name from the selector ID
+    const trackName = openSelector.id.replace('placement-', '').replace(/-/g, ' ');
+    
+    // Handle number keys 1-9 for quick selection
+    if (event.key >= '1' && event.key <= '9') {
+        event.preventDefault();
+        const placement = parseInt(event.key);
+        selectPlacement(trackName, placement);
+    }
+    
+    // Handle special keys for 10th, 11th, 12th place
+    if (event.key === '0') {
+        event.preventDefault();
+        selectPlacement(trackName, 10);
+    }
+    
+    if (event.key === '-') {
+        event.preventDefault();
+        selectPlacement(trackName, 11);
+    }
+    
+    if (event.key === '=') {
+        event.preventDefault();
+        selectPlacement(trackName, 12);
+    }
+    
+    // Handle Escape to close
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        openSelector.style.display = 'none';
     }
 });
 
 function updateNotes(trackName, notes) {
-    trackNotes[trackName] = notes;
-    window.trackNotes = trackNotes;
+    window.trackNotes[trackName] = notes;
     saveCurrentSession();
+    
+    // Also save temp session if not in a saved session
+    if (!currentSession && typeof window.saveTempSession === 'function') {
+        // Update temp session with current data
+        window.tempSession.placements = {...window.trackPlacements};
+        window.tempSession.notes = {...window.trackNotes};
+        window.tempSession.completedTracks = new Set(completedTrackNames);
+        window.saveTempSession();
+    }
     
     // Update the notes button appearance
     const notesButton = document.querySelector(`[data-track="${trackName}"] .notes-button`);
@@ -499,6 +811,9 @@ function getOrdinalSuffix(num) {
     return 'th';
 }
 
+// Make function globally accessible
+window.getOrdinalSuffix = getOrdinalSuffix;
+
 // Calculate points based on placement
 function getPointsForPlacement(placement) {
     if (placement === 1) return 15;
@@ -510,7 +825,7 @@ function getPointsForPlacement(placement) {
 // Calculate total score for current session
 function calculateSessionScore() {
     let totalScore = 0;
-    for (const [trackName, placement] of Object.entries(trackPlacements)) {
+    for (const [trackName, placement] of Object.entries(window.trackPlacements)) {
         totalScore += getPointsForPlacement(placement);
     }
     return totalScore;

@@ -6,17 +6,22 @@ let autoZoomEnabled = true; // Auto zoom is enabled by default
 let autoZoomInterval = null; // Interval for continuous zoom checking
 let lastSizeChange = 0; // Timestamp of last size change
 let currentZoomSize = 3; // Current zoom size to detect changes
+let trackTipMode = false; // Track tip mode is disabled by default
+window.trackTipMode = trackTipMode; // Make it globally accessible
 
 function toggleTheme() {
     const body = document.body;
     const themeButton = document.querySelector('.theme-button');
     
+    // Check if we're on mobile (screen width <= 768px)
+    const isMobile = window.innerWidth <= 768;
+    
     if (body.dataset.theme === "dark") {
         body.dataset.theme = "light";
-        themeButton.textContent = "🌙 Dark Mode";
+        themeButton.textContent = isMobile ? "🌙" : "🌙 Dark Mode";
     } else {
         body.dataset.theme = "dark";
-        themeButton.textContent = "☀️ Light Mode";
+        themeButton.textContent = isMobile ? "☀️" : "☀️ Light Mode";
     }
 }
 
@@ -34,6 +39,14 @@ function showStats() {
     const statsModal = document.getElementById('statsModal');
     calculateAndDisplayStats();
     statsModal.classList.add('active');
+}
+
+function openTipsForm() {
+    window.open('https://forms.gle/BTSvAVEbBNFhY8xs5', '_blank', 'noopener,noreferrer');
+}
+
+function updateSessionButtonDisplay(zoomLevel) {
+    // This function is now deprecated - buttons are always emoji-only
 }
 
 function adjustSize(value) {
@@ -77,6 +90,7 @@ function adjustSize(value) {
     document.documentElement.style.setProperty('--track-image-height', interpolated.imageHeight + 'px');
     document.documentElement.style.setProperty('--track-name-size', interpolated.nameSize + 'px');
     document.documentElement.style.setProperty('--track-gap', interpolated.gap + 'px');
+    
 }
 
 function zoomToFit() {
@@ -96,19 +110,19 @@ function zoomToFit() {
     
     // Get fixed elements heights
     const header = document.querySelector('.header');
-    
     const headerHeight = header.offsetHeight;
     
-    // Calculate available height for tracks (no separate stats height since it's inline now)
-    const availableHeight = viewportHeight - headerHeight - 40; // Margin for spacing
+    // Calculate available height for tracks with more conservative margins
+    const availableHeight = viewportHeight - headerHeight - 60; // Increased margin for better fit
     
-    // Start with a smaller size when sidebar is open
-    let testSize = sidebarOpen ? 0.5 : 1.0;
-    let maxSize = sidebarOpen ? 3.0 : 5.0;
+    // Start with a smaller size when sidebar is open or on mobile
+    const isMobile = viewportWidth <= 768;
+    let testSize = sidebarOpen ? 0.5 : (isMobile ? 0.8 : 1.0);
+    let maxSize = sidebarOpen ? 3.0 : (isMobile ? 2.5 : 5.0);
     let bestSize = testSize;
     
     // Binary search to find the largest size that doesn't cause scrolling
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 25; i++) {
         testSize = (bestSize + maxSize) / 2;
         
         // Apply test size
@@ -123,17 +137,20 @@ function zoomToFit() {
         const trackGrid = document.querySelector('.track-grid');
         const gridHeight = trackGrid.scrollHeight;
         const gridWidth = trackGrid.scrollWidth;
+        
+        // More strict scrollbar detection
         const hasVerticalScrollbar = document.documentElement.scrollHeight > viewportHeight;
         const hasHorizontalScrollbar = gridWidth > availableWidth;
+        const contentFitsHeight = gridHeight <= availableHeight;
         
-        if (!hasVerticalScrollbar && !hasHorizontalScrollbar && gridHeight <= availableHeight) {
+        if (!hasVerticalScrollbar && !hasHorizontalScrollbar && contentFitsHeight) {
             bestSize = testSize;
         } else {
             maxSize = testSize;
         }
         
         // Stop if we're close enough
-        if (Math.abs(maxSize - bestSize) < 0.05) break;
+        if (Math.abs(maxSize - bestSize) < 0.03) break;
     }
     
     // Apply the best size found
@@ -141,6 +158,9 @@ function zoomToFit() {
     adjustSize(bestSize);
     isZoomToFitCall = false; // Reset flag
     document.getElementById('sizeSlider').value = bestSize.toFixed(1);
+    
+    // Update session button display based on zoom level
+    updateSessionButtonDisplay(bestSize);
     
     // Track size changes
     if (Math.abs(bestSize - currentZoomSize) > 0.01) {
@@ -253,4 +273,68 @@ adjustSize = function(value) {
         manualControls.style.display = 'flex';
     }
     originalAdjustSize(value);
+    
+    // Update session button display based on new zoom level
+    updateSessionButtonDisplay(parseFloat(value));
 };
+
+// Track Tip Mode Functions
+function toggleTrackTipMode() {
+    trackTipMode = !trackTipMode;
+    window.trackTipMode = trackTipMode; // Update global variable
+    const toggleBtn = document.getElementById('trackTipToggleBtn');
+    
+    if (trackTipMode) {
+        toggleBtn.classList.add('active');
+        toggleBtn.textContent = '💡 Track Tips ON';
+    } else {
+        toggleBtn.classList.remove('active');
+        toggleBtn.textContent = '💡 Track Tips OFF';
+    }
+}
+
+function showTrackTip(trackName) {
+    if (!trackTipMode) return;
+    
+    const modal = document.getElementById('trackTipModal');
+    const title = document.getElementById('trackTipTitle');
+    
+    title.textContent = `${trackName} - Track Tips`;
+    modal.classList.add('active');
+}
+
+function closeTrackTip() {
+    const modal = document.getElementById('trackTipModal');
+    modal.classList.remove('active');
+}
+
+// Add click outside to close track tip modal
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('trackTipModal');
+    const modalContent = document.querySelector('.track-tip-content');
+    
+    if (modal.classList.contains('active') && 
+        !modalContent.contains(event.target) && 
+        event.target === modal) {
+        closeTrackTip();
+    }
+});
+
+// Function to update theme button text based on screen size
+function updateThemeButtonText() {
+    const body = document.body;
+    const themeButton = document.querySelector('.theme-button');
+    const isMobile = window.innerWidth <= 768;
+    
+    if (body.dataset.theme === "dark") {
+        themeButton.textContent = isMobile ? "☀️" : "☀️ Light Mode";
+    } else {
+        themeButton.textContent = isMobile ? "🌙" : "🌙 Dark Mode";
+    }
+}
+
+// Make functions globally accessible
+window.toggleTrackTipMode = toggleTrackTipMode;
+window.showTrackTip = showTrackTip;
+window.closeTrackTip = closeTrackTip;
+window.updateThemeButtonText = updateThemeButtonText;

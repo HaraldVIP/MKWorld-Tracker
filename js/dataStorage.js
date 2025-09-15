@@ -21,13 +21,48 @@ function loadGlobalFavorites() {
     }
 }
 
+// Save temporary session to localStorage
+function saveTempSession() {
+    if (window.tempSession) {
+        const tempSessionData = {
+            placements: window.tempSession.placements,
+            notes: window.tempSession.notes,
+            completedTracks: Array.from(window.tempSession.completedTracks)
+        };
+        console.log('Saving temp session:', tempSessionData);
+        localStorage.setItem('tempSession', JSON.stringify(tempSessionData));
+    }
+}
+
+// Load temporary session from localStorage
+function loadTempSession() {
+    const savedTempSession = localStorage.getItem('tempSession');
+    if (savedTempSession) {
+        try {
+            const tempSessionData = JSON.parse(savedTempSession);
+            console.log('Loading temp session from storage:', tempSessionData);
+            window.tempSession = {
+                placements: tempSessionData.placements || {},
+                notes: tempSessionData.notes || {},
+                completedTracks: new Set(tempSessionData.completedTracks || [])
+            };
+            console.log('Loaded temp session:', window.tempSession);
+            return true;
+        } catch (e) {
+            console.error('Error loading temp session:', e);
+        }
+    }
+    console.log('No temp session found in storage');
+    return false;
+}
+
 // Load from localStorage
 function loadFromLocalStorage() {
     // Load global favorites first
     loadGlobalFavorites();
     
-    // Don't load completed tracks from localStorage in session mode
-    // They should only come from the current session or temp session
+    // Load temporary session if available
+    loadTempSession();
     
     const savedSortMode = localStorage.getItem('sortMode');
     if (savedSortMode) {
@@ -35,3 +70,7 @@ function loadFromLocalStorage() {
     }
     
 }
+
+// Make functions globally accessible
+window.saveTempSession = saveTempSession;
+window.loadTempSession = loadTempSession;

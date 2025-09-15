@@ -390,6 +390,36 @@
     right: 8px;
 }
 
+/* Adjust button positioning on small screens to avoid interference with track clicks */
+@media (max-width: 480px) {
+    .notes-button {
+        top: 4px;
+        left: 4px;
+        z-index: 5;
+    }
+    
+    .placement-button {
+        top: 4px;
+        right: 4px;
+        z-index: 5;
+    }
+}
+
+/* Adjust button positioning on very small screens */
+@media (max-width: 360px) {
+    .notes-button {
+        top: 2px;
+        left: 2px;
+        z-index: 5;
+    }
+    
+    .placement-button {
+        top: 2px;
+        right: 2px;
+        z-index: 5;
+    }
+}
+
 .placement-button:hover {
     background: rgba(255, 193, 7, 0.9);
     box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);

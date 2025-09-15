@@ -26,7 +26,7 @@ const tracks = [
     { filename: 'Rainbow Road.png', name: 'Rainbow Road' },
     { filename: 'Salty Salty Speedway.jpg', name: 'Salty Salty Speedway' },
     { filename: 'Shy Guy Bazaar.png', name: 'Shy Guy Bazaar' },
-    { filename: 'Sky-High Syndae.png', name: 'Sky-High Syndae' },
+    { filename: 'Sky-High Syndae.png', name: 'Sky-High Sundae' },
     { filename: 'Starview Peak.png', name: 'Starview Peak' },
     { filename: 'Toad\'s Factory.png', name: 'Toad\'s Factory' },
     { filename: 'Wario Shipyard.png', name: 'Wario Shipyard' },
@@ -63,7 +63,7 @@ const discordTrackCodes = {
     'Rainbow Road': ':track_084RR:',
     'Salty Salty Speedway': ':track_052SSS:',
     'Shy Guy Bazaar': ':track_022rSGB:',
-    'Sky-High Syndae': ':track_033rSHS:',
+    'Sky-High Sundae': ':track_033rSHS:',
     'Starview Peak': ':track_032SP:',
     'Toad\'s Factory': ':track_073rTF:',
     'Wario Shipyard': ':track_034rWSh:',
@@ -79,29 +79,118 @@ let completedTrackOrder = []; // Track the order of completion
 let sortMode = 'alphabetical';
 let hoveredTrackName = null;
 
+// Make starredTracks globally accessible
+window.starredTracks = starredTracks;
+
 // Generate track items
 function generateTrackItems() {
+    console.log('generateTrackItems called');
     const trackGrid = document.getElementById('trackGrid');
     if (!trackGrid) {
+        console.log('trackGrid not found');
         return;
     }
     trackGrid.innerHTML = '';
 
     // Get tracks in the correct order based on sort mode
     let tracksToRender = getTracksInOrder();
+    console.log('tracksToRender:', tracksToRender.length);
 
     tracksToRender.forEach((track, index) => {
-        const isStarred = starredTracks.has(track.name);
-        const isCompleted = completedTrackNames.has(track.name);
+        try {
+            const isStarred = starredTracks.has(track.name);
+            const isCompleted = completedTrackNames.has(track.name);
         const trackItem = document.createElement('div');
+        const hasFirstPlace = window.trackPlacements && window.trackPlacements[track.name] === 1;
         trackItem.className = `track-item ${isStarred ? 'starred' : ''} ${isCompleted ? 'grayed-out' : ''}`;
         trackItem.dataset.trackName = track.name;
         trackItem.dataset.track = track.name;
         
-        trackItem.addEventListener('click', (e) => {
-            // Toggle track completion (works in session mode, with or without active session)
-            toggleTrackByName(track.name);
+        // Only add crown class if track has 1st place placement (no animation on generation)
+        if (hasFirstPlace) {
+            trackItem.classList.add('victory-crown');
+        }
+        
+        // Add mouse down event for immediate visual feedback
+        trackItem.addEventListener('mousedown', (e) => {
+            // Only handle left mouse button
+            if (e.button === 0) {
+                trackItem.classList.add('clicking');
+            }
         });
+        
+        // Add mouse up event to remove clicking class
+        trackItem.addEventListener('mouseup', (e) => {
+            if (e.button === 0) {
+                trackItem.classList.remove('clicking');
+            }
+        });
+        
+        // Add mouse leave event to remove clicking class if mouse leaves while pressed
+        trackItem.addEventListener('mouseleave', () => {
+            trackItem.classList.remove('clicking');
+        });
+        
+        // Touch handling variables for this track item
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchMoved = false;
+        
+        // Handle touch start to detect movement
+        trackItem.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            touchMoved = false;
+        });
+        
+        // Handle touch move to detect scrolling
+        trackItem.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                const deltaX = Math.abs(touch.clientX - touchStartX);
+                const deltaY = Math.abs(touch.clientY - touchStartY);
+                
+                // If moved more than 10 pixels, consider it a scroll
+                if (deltaX > 10 || deltaY > 10) {
+                    touchMoved = true;
+                }
+            }
+        });
+        
+        // Handle both click and touch events for better mobile support
+        const handleTrackToggle = (e) => {
+            // For touch events, only proceed if it wasn't a scroll
+            if (e.type === 'touchend' && touchMoved) {
+                return;
+            }
+            
+            // Prevent default to avoid any browser default behavior
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Check if track is currently completed before toggling
+            const wasCompleted = completedTrackNames.has(track.name);
+            
+            // Add clicked class for instant visual feedback
+            trackItem.classList.add('clicked');
+            
+            // Remove clicked class and toggle state immediately
+            trackItem.classList.remove('clicked');
+            toggleTrackByName(track.name);
+            
+            // Only show track tip if track tip mode is enabled AND track is being completed (not deselected)
+            if (window.trackTipMode && !wasCompleted) {
+                if (typeof window.showTrackTip === 'function') {
+                    window.showTrackTip(track.name);
+                } else {
+                    console.error('showTrackTip function not available');
+                }
+            }
+        };
+        
+        trackItem.addEventListener('click', handleTrackToggle);
+        trackItem.addEventListener('touchend', handleTrackToggle);
         
         // Add hover events for F key functionality
         trackItem.addEventListener('mouseenter', () => {
@@ -135,21 +224,54 @@ function generateTrackItems() {
                 const notesToggle = document.createElement('button');
                 const hasNotes = window.trackNotes[track.name] && window.trackNotes[track.name].trim() !== '';
                 notesToggle.className = `session-control-button notes-button ${hasNotes ? 'has-notes' : ''}`;
-                notesToggle.textContent = '📝 Notes';
-                notesToggle.addEventListener('click', (e) => {
+                
+                // Always use emoji-only for notes button
+                notesToggle.innerHTML = '📝';
+                notesToggle.classList.add('emoji-only');
+                
+                // Touch handling for notes button
+                let notesTouchMoved = false;
+                
+                notesToggle.addEventListener('touchstart', (e) => {
+                    const touch = e.touches[0];
+                    notesTouchMoved = false;
+                });
+                
+                notesToggle.addEventListener('touchmove', (e) => {
+                    notesTouchMoved = true;
+                });
+                
+                const handleNotesToggle = (e) => {
+                    // For touch events, only proceed if it wasn't a scroll
+                    if (e.type === 'touchend' && notesTouchMoved) {
+                        return;
+                    }
+                    
                     e.stopPropagation();
                     e.preventDefault();
                     toggleNotes(track.name);
-                });
+                };
+                notesToggle.addEventListener('click', handleNotesToggle);
+                notesToggle.addEventListener('touchend', handleNotesToggle);
                 trackItem.appendChild(notesToggle);
                 
-                // Placement button
+                // Placement button - now shows actual placement number
                 const placementToggle = document.createElement('button');
                 placementToggle.className = 'session-control-button placement-button';
                 const placement = window.trackPlacements[track.name];
+                
+                // Show placement number with ordinal suffix
                 if (placement) {
-                    placementToggle.textContent = `${placement}${getOrdinalSuffix(placement)}`;
-                    // Set background color based on placement
+                    const ordinalSuffix = placement === 1 ? 'st' : placement === 2 ? 'nd' : placement === 3 ? 'rd' : 'th';
+                    placementToggle.innerHTML = `${placement}${ordinalSuffix}`;
+                    placementToggle.title = `${placement}${ordinalSuffix} Place`;
+                } else {
+                    placementToggle.innerHTML = '🏆';
+                    placementToggle.title = 'Set placement';
+                }
+                
+                // Set background color based on placement
+                if (placement) {
                     if (placement === 1) {
                         placementToggle.style.background = '#FFD700'; // Gold
                         placementToggle.style.color = '#000';
@@ -163,40 +285,125 @@ function generateTrackItems() {
                         placementToggle.style.background = '#8B4513'; // Brown for 4th+
                         placementToggle.style.color = '#fff';
                     }
-                } else {
-                    placementToggle.textContent = '🏆 Placement';
                 }
-                placementToggle.addEventListener('click', (e) => {
+                // Touch handling for placement button
+                let placementTouchMoved = false;
+                
+                placementToggle.addEventListener('touchstart', (e) => {
+                    const touch = e.touches[0];
+                    placementTouchMoved = false;
+                });
+                
+                placementToggle.addEventListener('touchmove', (e) => {
+                    placementTouchMoved = true;
+                });
+                
+                const handlePlacementToggle = (e) => {
+                    // For touch events, only proceed if it wasn't a scroll
+                    if (e.type === 'touchend' && placementTouchMoved) {
+                        return;
+                    }
+                    
                     e.stopPropagation();
                     e.preventDefault();
                     showPlacementSelector(track.name);
-                });
+                };
+                placementToggle.addEventListener('click', handlePlacementToggle);
+                placementToggle.addEventListener('touchend', handlePlacementToggle);
                 trackItem.appendChild(placementToggle);
-            }
-            
-            // Add placement selector
-            const placementSelector = document.createElement('div');
-            placementSelector.className = 'placement-selector';
-            placementSelector.id = `placement-${track.name.replace(/\s+/g, '-')}`;
-            placementSelector.style.display = 'none';
-            
-            // Prevent clicks on the placement selector from bubbling up to the track item
-            placementSelector.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
-            
-            for (let i = 1; i <= 12; i++) {
-                const option = document.createElement('div');
-                option.className = `placement-option placement-${i === 1 ? '1st' : i === 2 ? '2nd' : i === 3 ? '3rd' : i + 'th'}`;
-                option.textContent = i;
-                option.addEventListener('click', (e) => {
+                
+                // Add placement selector with improved layout (only for completed tracks)
+                const placementSelector = document.createElement('div');
+                placementSelector.className = 'placement-selector';
+                placementSelector.id = `placement-${track.name.replace(/\s+/g, '-')}`;
+                placementSelector.style.display = 'none';
+                placementSelector.style.position = 'absolute';
+                placementSelector.style.top = '0';
+                placementSelector.style.left = '0';
+                placementSelector.style.width = '100%';
+                placementSelector.style.height = '100%';
+                placementSelector.style.visibility = 'hidden';
+                placementSelector.style.opacity = '0';
+                
+                // Prevent clicks on the placement selector from bubbling up to the track item
+                const handlePlacementSelectorEvent = (e) => {
                     e.stopPropagation();
                     e.preventDefault();
-                    selectPlacement(track.name, i);
+                };
+                
+                placementSelector.addEventListener('click', handlePlacementSelectorEvent);
+                placementSelector.addEventListener('touchend', handlePlacementSelectorEvent);
+                
+                // Create placement options in a 3x4 grid layout
+                for (let i = 1; i <= 12; i++) {
+                    const option = document.createElement('div');
+                    option.className = `placement-option placement-${i === 1 ? '1st' : i === 2 ? '2nd' : i === 3 ? '3rd' : i + 'th'}`;
+                    // Add ordinal suffix
+                    const ordinalSuffix = i === 1 ? 'st' : i === 2 ? 'nd' : i === 3 ? 'rd' : 'th';
+                    option.textContent = `${i}${ordinalSuffix}`;
+                    option.title = `${i}${ordinalSuffix} Place`;
+                    // Touch handling for placement options
+                    let optionTouchMoved = false;
+                    
+                    option.addEventListener('touchstart', (e) => {
+                        const touch = e.touches[0];
+                        optionTouchMoved = false;
+                    });
+                    
+                    option.addEventListener('touchmove', (e) => {
+                        optionTouchMoved = true;
+                    });
+                    
+                    const handlePlacementOption = (e) => {
+                        // For touch events, only proceed if it wasn't a scroll
+                        if (e.type === 'touchend' && optionTouchMoved) {
+                            return;
+                        }
+                        
+                        e.stopPropagation();
+                        e.preventDefault();
+                        selectPlacement(track.name, i);
+                    };
+                    option.addEventListener('click', handlePlacementOption);
+                    option.addEventListener('touchend', handlePlacementOption);
+                    placementSelector.appendChild(option);
+                }
+                
+                // Add clear button to remove placement
+                const clearButton = document.createElement('div');
+                clearButton.className = 'placement-option placement-clear';
+                clearButton.textContent = '✕';
+                clearButton.title = 'Clear placement';
+                clearButton.style.gridColumn = '1 / -1';
+                clearButton.style.background = '#dc3545';
+                clearButton.style.marginTop = '4px';
+                // Touch handling for clear button
+                let clearTouchMoved = false;
+                
+                clearButton.addEventListener('touchstart', (e) => {
+                    const touch = e.touches[0];
+                    clearTouchMoved = false;
                 });
-                placementSelector.appendChild(option);
+                
+                clearButton.addEventListener('touchmove', (e) => {
+                    clearTouchMoved = true;
+                });
+                
+                const handleClearPlacement = (e) => {
+                    // For touch events, only proceed if it wasn't a scroll
+                    if (e.type === 'touchend' && clearTouchMoved) {
+                        return;
+                    }
+                    
+                    e.stopPropagation();
+                    e.preventDefault();
+                    clearPlacement(track.name);
+                };
+                clearButton.addEventListener('click', handleClearPlacement);
+                clearButton.addEventListener('touchend', handleClearPlacement);
+                placementSelector.appendChild(clearButton);
+                trackItem.appendChild(placementSelector);
             }
-            trackItem.appendChild(placementSelector);
             
             // Add notes section
             const notesSection = document.createElement('div');
@@ -205,38 +412,53 @@ function generateTrackItems() {
             notesSection.style.display = 'none';
             
             // Prevent clicks on the notes section from bubbling up to the track item
-            notesSection.addEventListener('click', (e) => {
+            const handleNotesSectionEvent = (e) => {
                 e.stopPropagation();
-                // Don't prevent default - we only want to stop event bubbling
-            });
+                e.preventDefault();
+            };
+            
+            notesSection.addEventListener('click', handleNotesSectionEvent);
+            notesSection.addEventListener('touchend', handleNotesSectionEvent);
             
             const textarea = document.createElement('textarea');
             textarea.placeholder = 'Add notes about this race...';
             textarea.value = window.trackNotes[track.name] || '';
             textarea.onchange = (e) => updateNotes(track.name, e.target.value);
+            textarea.oninput = (e) => updateNotes(track.name, e.target.value);
+            textarea.onblur = (e) => updateNotes(track.name, e.target.value);
             
             // Also prevent textarea events from bubbling up
-            textarea.addEventListener('click', (e) => {
+            const handleTextareaEvent = (e) => {
                 e.stopPropagation();
-            });
-            textarea.addEventListener('focus', (e) => {
+            };
+            
+            const handleTextareaInputEvent = (e) => {
                 e.stopPropagation();
-            });
-            textarea.addEventListener('keydown', (e) => {
-                e.stopPropagation();
-            });
-            textarea.addEventListener('keyup', (e) => {
-                e.stopPropagation();
-            });
+                // Don't prevent default for input events - we need them to work
+            };
+            
+            textarea.addEventListener('click', handleTextareaEvent);
+            textarea.addEventListener('touchend', handleTextareaEvent);
+            textarea.addEventListener('focus', handleTextareaEvent);
+            textarea.addEventListener('keydown', handleTextareaEvent);
+            textarea.addEventListener('keyup', handleTextareaEvent);
+            textarea.addEventListener('input', handleTextareaInputEvent);
+            textarea.addEventListener('change', handleTextareaInputEvent);
             
             notesSection.appendChild(textarea);
             trackItem.appendChild(notesSection);
         }
         trackGrid.appendChild(trackItem);
+        } catch (error) {
+            console.error('Error creating track item:', error, track);
+        }
     });
 
     updateStats();
 }
+
+// Make generateTrackItems globally accessible
+window.generateTrackItems = generateTrackItems;
 
 function updateStats() {
     document.getElementById('completedTracks').textContent = completedTracks;
@@ -268,9 +490,8 @@ function toggleTrackByName(trackName) {
         }
         
         // Remove placement when deselecting track
-        if (window.sessionMode && trackPlacements[trackName]) {
-            delete trackPlacements[trackName];
-            window.trackPlacements = trackPlacements;
+        if (window.sessionMode && window.trackPlacements[trackName]) {
+            delete window.trackPlacements[trackName];
         }
         
         // Keep notes when deselecting track - don't delete them
@@ -300,13 +521,20 @@ function toggleTrackByName(trackName) {
         saveCurrentSession();
     } else if (window.sessionMode && !window.currentSession) {
         // Save to temp session
-        tempSession.completedTracks = new Set(completedTrackNames);
+        window.tempSession.completedTracks = new Set(completedTrackNames);
+        window.tempSession.placements = {...window.trackPlacements};
+        window.tempSession.notes = {...window.trackNotes};
         // Don't save starredTracks to temp session - they are global
+        // Save temp session to localStorage
+        if (typeof window.saveTempSession === 'function') {
+            window.saveTempSession();
+        }
     } else {
         // This should not happen in session mode
         console.warn('Unexpected normal mode save attempt');
     }
     
+    // Don't mark as layout change since this is just toggling track completion, not changing layout
     generateTrackItems();
 }
 
@@ -344,7 +572,9 @@ function toggleStar(trackName) {
         saveCurrentSession();
     } else if (window.sessionMode && !window.currentSession) {
         // Save to temp session (but not favorites)
-        tempSession.completedTracks = new Set(completedTrackNames);
+        window.tempSession.completedTracks = new Set(completedTrackNames);
+        window.tempSession.placements = {...window.trackPlacements};
+        window.tempSession.notes = {...window.trackNotes};
     } else {
         // This should not happen in session mode
         console.warn('Unexpected normal mode save attempt');
@@ -358,6 +588,17 @@ function resetAll() {
     completedTracks = 0;
     completedTrackOrder = []; // Clear completion order
     // Don't clear starredTracks - keep favorites
+    
+    // Clear temp session when resetting
+    if (window.tempSession) {
+        window.tempSession.placements = {};
+        window.tempSession.notes = {};
+        window.tempSession.completedTracks = new Set();
+        // Save cleared temp session
+        if (typeof window.saveTempSession === 'function') {
+            window.saveTempSession();
+        }
+    }
     
     const resetButton = document.querySelector('.reset-button');
     resetButton.classList.add('reset-animation');
@@ -390,6 +631,11 @@ function getTracksInOrder() {
                 if (!aStarred && bStarred) return 1;
                 return a.name.localeCompare(b.name);
             });
+            break;
+        case 'remaining':
+            // Filter out completed tracks and sort alphabetically
+            tracksToRender = tracksToRender.filter(track => !completedTrackNames.has(track.name));
+            tracksToRender.sort((a, b) => a.name.localeCompare(b.name));
             break;
         default:
             break;

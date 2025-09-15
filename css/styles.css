@@ -17,6 +17,23 @@ body {
     margin: 0;
     padding: 20px;
     transition: background-color 0.3s, color 0.3s;
+    overflow-x: hidden; /* Prevent horizontal scrollbar */
+    overflow-y: visible; /* Allow vertical overflow for menus */
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+/* Mobile body adjustments */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 5px;
+    }
 }
 
 .main-content-wrapper {
@@ -111,6 +128,22 @@ body {
     margin: 0 auto;
     padding: 0 20px;
     box-sizing: border-box;
+    overflow: visible; /* Allow menus to extend beyond grid */
+}
+
+/* Mobile track grid adjustments */
+@media (max-width: 768px) {
+    .track-grid {
+        padding: 0 10px;
+        gap: var(--track-gap, 15px);
+    }
+}
+
+@media (max-width: 480px) {
+    .track-grid {
+        padding: 0 5px;
+        gap: var(--track-gap, 10px);
+    }
 }
 
 /* Track Item Styles */
@@ -120,9 +153,10 @@ body {
     padding: var(--track-padding, 15px) var(--track-padding, 15px) 8px var(--track-padding, 15px);
     text-align: center;
     box-shadow: 0 2px 4px var(--shadow);
-    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s, opacity 0.5s ease-in-out, filter 0.5s ease-in-out, scale 0.2s ease;
+    transition: box-shadow 0.3s ease, background-color 0.3s, opacity 0.5s ease-in-out, filter 0.5s ease-in-out;
     cursor: pointer;
     position: relative;
+    overflow: visible;
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -134,12 +168,27 @@ body {
     user-drag: none;
     box-sizing: border-box;
     border: 2px solid transparent;
+    z-index: 1;
+    margin-top: 30px; /* Add space for crown */
 }
 
-.track-item:hover {
+/* Click animations for track items */
+.track-item:active {
+    transform: scale(0.95) !important;
+}
+
+.track-item.clicking {
+    transform: scale(0.95) !important;
+}
+
+.track-item.clicked {
+    transform: scale(1) !important;
+}
+
+.track-item:hover:not(:active):not(.clicked):not(.clicking) {
     transform: translateY(-2px) scale(1.02);
     box-shadow: 0 8px 16px var(--shadow-hover);
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.15);
 }
 
 .track-item.starred {
@@ -155,8 +204,21 @@ body {
 
 .track-item.grayed-out {
     transform: scale(0.98);
-    transition: all 0.4s ease;
+    transition: opacity 0.4s ease, filter 0.4s ease, background-color 0.4s ease;
 }
+
+.track-item.grayed-out:active {
+    transform: scale(0.95) !important;
+}
+
+.track-item.grayed-out.clicking {
+    transform: scale(0.95) !important;
+}
+
+.track-item.grayed-out.clicked {
+    transform: scale(1) !important;
+}
+
 
 /* Apply grayscale only to the image and text, not to session control elements */
 .track-item.grayed-out .track-image {
@@ -406,6 +468,7 @@ body {
     left: 50%;
     transform: translateX(-50%);
     width: auto;
+    z-index: 1;
 }
 
 .stats-inline {
@@ -422,9 +485,82 @@ body {
 
 .right-controls {
     display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    z-index: 2;
+    position: relative;
+}
+
+.top-controls {
+    display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
     flex-wrap: wrap;
+}
+
+.bottom-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .controls-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .left-controls, .right-controls {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .right-controls {
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .top-controls, .bottom-controls {
+        justify-content: center;
+    }
+    
+    .center-controls {
+        position: static;
+        transform: none;
+        margin: 0;
+        order: -1;
+    }
+    
+    .stats-inline {
+        font-size: 12px;
+    }
+    
+    .progress-bar-inline {
+        width: 250px;
+    }
+}
+
+@media (max-width: 480px) {
+    .right-controls {
+        gap: 8px;
+    }
+    
+    .stats-inline {
+        font-size: 11px;
+    }
+    
+    .progress-bar-inline {
+        width: 200px;
+    }
+    
+    .zoom-toggle-button, .stats-button, .discord-copy-button, .tips-button {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
 }
 
 /* Size Slider Styles */
@@ -549,6 +685,59 @@ body {
     transform: translateY(0);
 }
 
+.tips-button {
+    background: #FF6B35;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 8px;
+    transition: all 0.3s ease;
+}
+
+.tips-button:hover {
+    background: #E55A2B;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 107, 53, 0.3);
+}
+
+.tips-button:active {
+    transform: translateY(0);
+}
+
+/* Track Tip Mode Button */
+.track-tip-toggle-button {
+    background: #FF6B35;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-right: 8px;
+    transition: all 0.3s ease;
+}
+
+.track-tip-toggle-button:hover {
+    background: #E55A2B;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 107, 53, 0.3);
+}
+
+.track-tip-toggle-button:active {
+    transform: translateY(0);
+}
+
+.track-tip-toggle-button.active {
+    background: #4CAF50;
+}
+
+.track-tip-toggle-button.active:hover {
+    background: #45a049;
+}
+
 .session-button {
     background: #FF6B35;
     color: white;
@@ -569,6 +758,608 @@ body {
 
 .session-button.active {
     background: #4CAF50;
+}
+
+/* Session Control Button Styles */
+.session-control-button {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: calc(var(--track-padding, 15px) * 0.2) calc(var(--track-padding, 15px) * 0.4);
+    border-radius: calc(var(--track-padding, 15px) * 0.2);
+    cursor: pointer;
+    font-size: calc(var(--track-name-size, 14px) * 0.7);
+    font-weight: bold;
+    margin: calc(var(--track-padding, 15px) * 0.1);
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    min-width: calc(var(--track-min-width, 200px) * 0.25);
+    text-align: center;
+}
+
+.session-control-button:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.notes-button {
+    background: #17a2b8;
+}
+
+.notes-button:hover {
+    background: #138496;
+}
+
+.notes-button.has-notes {
+    background: #28a745;
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.3);
+}
+
+.notes-button.has-notes:hover {
+    background: #218838;
+}
+
+.placement-button {
+    background: #ffc107;
+    color: #000;
+    font-weight: bold;
+}
+
+.placement-button:hover {
+    background: #e0a800;
+}
+
+/* Responsive session control buttons */
+@media (max-width: 768px) {
+    .session-control-button {
+        font-size: 9px;
+        padding: 3px 6px;
+        min-width: 50px;
+    }
+}
+
+@media (max-width: 480px) {
+    .session-control-button {
+        font-size: 8px;
+        padding: 2px 4px;
+        min-width: 40px;
+    }
+}
+
+/* Mobile emoji-only mode for session buttons when zoom is low */
+.session-control-button.emoji-only {
+    min-width: 30px;
+    padding: 4px;
+    font-size: 14px;
+}
+
+/* Mobile and iPad responsive placement selector - now scales with track cards */
+@media (max-width: 768px) {
+    .placement-selector {
+        /* Override themes.css for mobile */
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        padding: 6px !important;
+        gap: 3px !important;
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        /* Fix mobile scrolling issues */
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        /* Ensure proper touch scrolling */
+        touch-action: pan-y;
+        /* Additional iPad fixes */
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        will-change: scroll-position;
+    }
+    
+    .placement-option {
+        min-height: 18px;
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 4px !important;
+    }
+}
+
+/* iPad specific fixes */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .placement-selector {
+        /* Fix iPad scrolling issues */
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        will-change: scroll-position;
+    }
+}
+
+@media (max-width: 480px) {
+    .placement-selector {
+        /* Override themes.css for mobile */
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        padding: 4px !important;
+        gap: 2px !important;
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        /* Fix mobile scrolling issues */
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        /* Ensure proper touch scrolling */
+        touch-action: pan-y;
+        /* Additional iPad fixes */
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        will-change: scroll-position;
+    }
+    
+    .placement-option {
+        min-height: 16px;
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 4px !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .placement-selector {
+        /* Override themes.css for mobile */
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        padding: 3px !important;
+        gap: 1px !important;
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        /* Fix mobile scrolling issues */
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        /* Ensure proper touch scrolling */
+        touch-action: pan-y;
+        /* Additional iPad fixes */
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        will-change: scroll-position;
+    }
+    
+    .placement-option {
+        min-height: 14px;
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 4px !important;
+    }
+}
+
+.session-control-button.emoji-only .button-text {
+    display: none !important;
+}
+
+/* Placement Selector Styles - Overlay on track card */
+.placement-selector {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(45, 45, 45, 0.95);
+    border: 2px solid rgba(76, 175, 80, 0.8);
+    border-radius: 8px;
+    padding: 8px;
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    /* Ensure proper grid layout for scrolling */
+    grid-auto-rows: minmax(20px, auto);
+    z-index: 1000;
+    box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Ensure it covers the entire track card */
+    box-sizing: border-box;
+    /* Add scrolling when content overflows */
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Ensure grid items stay within bounds */
+    align-content: start;
+    /* Fix mobile and iPad scrolling issues */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* Ensure proper touch scrolling */
+    touch-action: pan-y;
+    /* Additional iPad fixes */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    /* Force hardware acceleration */
+    will-change: scroll-position;
+}
+
+.placement-selector.show {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Custom scrollbar for placement selector */
+.placement-selector::-webkit-scrollbar {
+    width: 4px;
+}
+
+.placement-selector::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.placement-selector::-webkit-scrollbar-thumb {
+    background: rgba(76, 175, 80, 0.6);
+    border-radius: 2px;
+}
+
+.placement-selector::-webkit-scrollbar-thumb:hover {
+    background: rgba(76, 175, 80, 0.8);
+}
+
+.placement-option {
+    width: 100%;
+    height: 100%;
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, #4a4a4a, #3a3a3a);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: calc(var(--track-name-size, 14px) * 0.8);
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 
+        0 1px 4px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.placement-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.placement-option:hover::before {
+    left: 100%;
+}
+
+.placement-option:hover {
+    background: linear-gradient(145deg, #5a6268, #4a4a4a);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.placement-option.placement-1st {
+    background: linear-gradient(145deg, #FFD700, #FFA500);
+    color: #000;
+    box-shadow: 
+        0 2px 8px rgba(255, 215, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: goldGlow 2s ease-in-out infinite alternate;
+}
+
+.placement-option.placement-1st:hover {
+    background: linear-gradient(145deg, #FFA500, #FFD700);
+    box-shadow: 
+        0 4px 16px rgba(255, 215, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.placement-option.placement-2nd {
+    background: linear-gradient(145deg, #C0C0C0, #A8A8A8);
+    color: #000;
+    box-shadow: 
+        0 2px 8px rgba(192, 192, 192, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.placement-option.placement-2nd:hover {
+    background: linear-gradient(145deg, #A8A8A8, #C0C0C0);
+    box-shadow: 
+        0 4px 16px rgba(192, 192, 192, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.placement-option.placement-3rd {
+    background: linear-gradient(145deg, #CD7F32, #B8860B);
+    color: #fff;
+    box-shadow: 
+        0 2px 8px rgba(205, 127, 50, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.placement-option.placement-3rd:hover {
+    background: linear-gradient(145deg, #B8860B, #CD7F32);
+    box-shadow: 
+        0 4px 16px rgba(205, 127, 50, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.placement-option.placement-clear {
+    background: linear-gradient(145deg, #dc3545, #c82333) !important;
+    color: white !important;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 
+        0 2px 8px rgba(220, 53, 69, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.placement-option.placement-clear:hover {
+    background: linear-gradient(145deg, #c82333, #dc3545) !important;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 
+        0 4px 16px rgba(220, 53, 69, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Gold glow animation for 1st place */
+@keyframes goldGlow {
+    from {
+        box-shadow: 
+            0 2px 8px rgba(255, 215, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    to {
+        box-shadow: 
+            0 4px 16px rgba(255, 215, 0, 0.6),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4),
+            0 0 20px rgba(255, 215, 0, 0.3);
+    }
+}
+
+/* Victory celebration styles */
+.track-item.victory-celebration {
+    animation: victoryBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes victoryBounce {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+/* Crown for 1st place */
+.track-item::after {
+    content: '👑';
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 40px;
+    background-image: url('assets/pictures/Crown.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 15;
+    filter: drop-shadow(0 3px 10px rgba(255, 215, 0, 0.8));
+    pointer-events: none;
+    font-size: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.track-item.victory-crown::after {
+    opacity: 1;
+}
+
+/* Only animate crown when it's first added, not on every class addition */
+.track-item.victory-crown.crown-animate::after {
+    animation: crownAppear 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes crownAppear {
+    0% { 
+        opacity: 0; 
+        transform: translateX(-50%) scale(0) rotate(-180deg);
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateX(-50%) scale(1) rotate(0deg);
+    }
+}
+
+/* Confetti container */
+.confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 2000;
+}
+
+.confetti {
+    position: absolute;
+    width: 6px;
+    height: 12px;
+    background: #FFD700;
+    animation: confettiFall 3s linear forwards;
+    border-radius: 3px;
+    opacity: 0;
+}
+
+.confetti:nth-child(2n) { background: #FF6B6B; }
+.confetti:nth-child(3n) { background: #4ECDC4; }
+.confetti:nth-child(4n) { background: #45B7D1; }
+.confetti:nth-child(5n) { background: #96CEB4; }
+.confetti:nth-child(6n) { background: #FFEAA7; }
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(-300px) rotate(0deg);
+        opacity: 0;
+    }
+    5% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(calc(100vh + 100px)) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+/* Score popup animation */
+.score-popup {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    font-weight: bold;
+    color: #4CAF50;
+    text-shadow: 0 0 10px rgba(76, 175, 80, 0.8);
+    pointer-events: none;
+    z-index: 1500;
+    animation: scorePopup 2s ease-out forwards;
+}
+
+@keyframes scorePopup {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    40% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) translateY(-50px) scale(0.8);
+    }
+}
+
+/* Score counter animation */
+.score-counter-animate {
+    animation: scoreCounterPulse 0.6s ease-out;
+}
+
+@keyframes scoreCounterPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); color: #4CAF50; }
+    100% { transform: scale(1); }
+}
+
+/* Score text shake animation */
+.score-text-shake {
+    animation: scoreTextShake 0.8s ease-out;
+}
+
+@keyframes scoreTextShake {
+    0% { 
+        transform: scale(1) translateX(0); 
+        color: var(--text-muted);
+    }
+    10% { 
+        transform: scale(1.1) translateX(-2px); 
+        color: #4CAF50;
+    }
+    20% { 
+        transform: scale(1.15) translateX(2px); 
+        color: #4CAF50;
+    }
+    30% { 
+        transform: scale(1.1) translateX(-1px); 
+        color: #4CAF50;
+    }
+    40% { 
+        transform: scale(1.15) translateX(1px); 
+        color: #4CAF50;
+    }
+    50% { 
+        transform: scale(1.1) translateX(0); 
+        color: #4CAF50;
+    }
+    100% { 
+        transform: scale(1) translateX(0); 
+        color: var(--text-muted);
+    }
+}
+
+/* Notes Section Styles */
+.notes-section {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    padding: 8px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    max-height: 200px;
+}
+
+.notes-section textarea {
+    width: 100%;
+    min-height: 60px;
+    max-height: 120px;
+    resize: vertical;
+    background: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--text-muted);
+    border-radius: 4px;
+    padding: 8px;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+}
+
+/* Desktop emoji-only mode when zoom is very low */
+@media (min-width: 769px) {
+    .session-control-button.emoji-only {
+        min-width: 25px;
+        padding: 2px 4px;
+        font-size: 12px;
+    }
 }
 
 /* Sort Controls */
@@ -619,6 +1410,32 @@ body {
     transition: all 0.3s ease;
 }
 
+/* Credit text lines */
+.credit-line-1, .credit-line-2 {
+    line-height: 1.2;
+}
+
+/* Mobile layout for credit - show as two lines */
+@media (max-width: 768px) {
+    .credit {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 8px 12px;
+    }
+    
+    .credit-line-1 {
+        font-size: 11px;
+        margin-bottom: 2px;
+    }
+    
+    .credit-line-2 {
+        font-size: 12px;
+        font-weight: bold;
+    }
+}
+
 /* Move credit to the right when sidebar is open */
 .credit.shifted {
     left: 370px; /* 350px sidebar + 20px margin */
@@ -635,6 +1452,54 @@ body {
     top: 10px;
     right: 10px;
     z-index: 1000;
+}
+
+/* Mobile theme button - show only emoji */
+@media (max-width: 768px) {
+    .theme-button.top-right {
+        padding: 8px;
+        font-size: 18px;
+        min-width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        top: 10px;
+        right: 10px;
+    }
+    
+    .theme-button.top-right::after {
+        content: "";
+        display: none;
+    }
+    
+    /* Move help button under theme button on mobile */
+    .help-button {
+        top: 60px !important; /* Position under theme button */
+        right: 10px !important; /* Align with theme button */
+        width: 40px !important;
+        height: 40px !important;
+        padding: 8px !important;
+        font-size: 18px !important;
+    }
+    
+    /* Ensure fixed elements don't go above website title */
+    .credit {
+        top: 10px;
+        left: 10px;
+    }
+    
+    /* Ensure main content has proper top margin to avoid overlap with fixed elements */
+    .main-content-wrapper {
+        margin-top: 0;
+        padding-top: 20px;
+    }
+    
+    /* Make sure header is visible and not covered by fixed elements */
+    .header {
+        margin-top: 20px;
+        padding-top: 10px;
+    }
 }
 
 /* Help Button */
@@ -992,4 +1857,96 @@ body {
 .mute-button.muted {
     background-color: var(--text-muted);
     color: var(--bg-color);
+}
+
+/* Track Tip Modal */
+.track-tip-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.track-tip-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.track-tip-content {
+    background: var(--card-bg);
+    border-radius: 12px;
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 800px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    animation: trackTipSlideIn 0.3s ease-out;
+}
+
+@keyframes trackTipSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.track-tip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #FF6B35;
+    color: white;
+}
+
+.track-tip-header h2 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.track-tip-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 0;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.3s;
+}
+
+.track-tip-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.track-tip-body {
+    padding: 30px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.track-tip-placeholder {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.track-tip-placeholder p {
+    margin: 10px 0;
 }
