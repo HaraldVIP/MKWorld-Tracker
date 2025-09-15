@@ -589,6 +589,14 @@ function resetAll() {
     completedTrackOrder = []; // Clear completion order
     // Don't clear starredTracks - keep favorites
     
+    // Clear global track data (placements and notes)
+    if (window.trackPlacements) {
+        window.trackPlacements = {};
+    }
+    if (window.trackNotes) {
+        window.trackNotes = {};
+    }
+    
     // Clear temp session when resetting
     if (window.tempSession) {
         window.tempSession.placements = {};

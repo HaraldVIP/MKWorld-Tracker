@@ -298,14 +298,164 @@ function showTrackTip(trackName) {
     
     const modal = document.getElementById('trackTipModal');
     const title = document.getElementById('trackTipTitle');
+    const body = document.querySelector('.track-tip-body');
     
     title.textContent = `${trackName} - Track Tips`;
+    
+    // Load track-specific content
+    loadTrackTipContent(trackName, body);
+    
+    // Prevent background scrolling
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    
+    // Show modal and trigger animations
+    modal.style.display = 'flex';
+    modal.offsetHeight; // Force reflow
     modal.classList.add('active');
+}
+
+// Track tip page management
+let currentTrackTipPage = 1;
+const totalTrackTipPages = 2;
+
+function loadTrackTipContent(trackName, container) {
+    // Reset to page 1
+    currentTrackTipPage = 1;
+    
+    // Hide all pages and show page 1
+    document.querySelectorAll('.track-tip-page').forEach(page => {
+        page.classList.remove('active');
+    });
+    document.getElementById('trackTipPage1').classList.add('active');
+    
+    // Update page dots
+    document.querySelectorAll('.page-dot').forEach(dot => {
+        dot.classList.remove('active');
+    });
+    document.getElementById('pageDot1').classList.add('active');
+    
+    // Update navigation
+    updateTrackTipNavigation();
+    
+    // Load content for all pages
+    loadStrategyContent(trackName);
+    loadItemTipsContent(trackName);
+    loadShortcutsContent(trackName);
+}
+
+function loadStrategyContent(trackName) {
+    const container = document.getElementById('strategyContent');
+    
+    container.innerHTML = `
+        <p>Strategy tips will be displayed here.</p>
+        <p>This section will contain racing strategies and tips for this track.</p>
+    `;
+}
+
+function loadItemTipsContent(trackName) {
+    const container = document.getElementById('itemTipsContent');
+    
+    container.innerHTML = `
+        <p>Item use tips will be displayed here.</p>
+        <p>This section will contain specific item usage strategies for this track.</p>
+    `;
+}
+
+function loadShortcutsContent(trackName) {
+    const container = document.getElementById('shortcutsContent');
+    
+    if (trackName === 'Whistlestop Summit') {
+        container.innerHTML = `
+            <div class="track-tip-video-section">
+                <h4>🎥 Shortcut Tutorial</h4>
+                <div class="youtube-video-container">
+                    <div class="youtube-thumbnail" onclick="openYouTubeVideo('wChv4_Cdpeg')">
+                        <img src="https://img.youtube.com/vi/wChv4_Cdpeg/maxresdefault.jpg" alt="YouTube Video Thumbnail" class="youtube-thumbnail-img">
+                        <div class="youtube-play-button">
+                            <div class="play-icon">▶</div>
+                        </div>
+                    </div>
+                    <div class="youtube-info">
+                        <h5 class="youtube-title">Whistlestop Summit Shortcut Tutorial</h5>
+                        <p class="youtube-description">This video teaches you how to do the most important shortcut on Whistlestop Summit! (Credit to Shortcat)</p>
+                        <button class="youtube-watch-button" onclick="openYouTubeVideo('wChv4_Cdpeg')">
+                            📺 Watch on YouTube
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        container.innerHTML = `
+            <p>Important no-item shortcuts will be displayed here.</p>
+            <p>This section will contain video tutorials and tips for shortcuts on this track.</p>
+        `;
+    }
+}
+
+
+function openYouTubeVideo(videoId) {
+    window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+}
+
+function flipTrackTipPage(direction) {
+    const newPage = currentTrackTipPage + direction;
+    
+    if (newPage >= 1 && newPage <= totalTrackTipPages) {
+        // Hide current page
+        document.getElementById(`trackTipPage${currentTrackTipPage}`).classList.remove('active');
+        document.getElementById(`pageDot${currentTrackTipPage}`).classList.remove('active');
+        
+        // Show new page
+        currentTrackTipPage = newPage;
+        document.getElementById(`trackTipPage${currentTrackTipPage}`).classList.add('active');
+        document.getElementById(`pageDot${currentTrackTipPage}`).classList.add('active');
+        
+        // Update navigation arrows
+        updateTrackTipNavigation();
+    }
+}
+
+function updateTrackTipNavigation() {
+    const leftArrow = document.getElementById('navArrowLeft');
+    const rightArrow = document.getElementById('navArrowRight');
+    
+    // Update left arrow
+    if (currentTrackTipPage === 1) {
+        leftArrow.style.display = 'none';
+    } else {
+        leftArrow.style.display = 'flex';
+        leftArrow.textContent = '‹';
+    }
+    
+    // Update right arrow
+    if (currentTrackTipPage === totalTrackTipPages) {
+        rightArrow.style.display = 'none';
+    } else {
+        rightArrow.style.display = 'flex';
+        rightArrow.textContent = 'NISCs ›';
+    }
 }
 
 function closeTrackTip() {
     const modal = document.getElementById('trackTipModal');
+    
+    // Remove active class to trigger fade out
     modal.classList.remove('active');
+    
+    // Restore background scrolling
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    
+    // Hide modal after transition completes
+    setTimeout(() => {
+        if (!modal.classList.contains('active')) {
+            modal.style.display = 'none';
+        }
+    }, 300); // Match the CSS transition duration
 }
 
 // Add click outside to close track tip modal
@@ -338,3 +488,5 @@ window.toggleTrackTipMode = toggleTrackTipMode;
 window.showTrackTip = showTrackTip;
 window.closeTrackTip = closeTrackTip;
 window.updateThemeButtonText = updateThemeButtonText;
+window.openYouTubeVideo = openYouTubeVideo;
+window.flipTrackTipPage = flipTrackTipPage;

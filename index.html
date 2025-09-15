@@ -151,10 +151,39 @@
                 <h2 id="trackTipTitle">Track Tips</h2>
                 <button class="track-tip-close" onclick="closeTrackTip()">&times;</button>
             </div>
+            <div class="track-tip-navigation">
+                <button class="nav-arrow nav-arrow-left" id="navArrowLeft" onclick="flipTrackTipPage(-1)" style="display: none;">‹</button>
+                <div class="page-indicator">
+                    <span class="page-dot active" id="pageDot1"></span>
+                    <span class="page-dot" id="pageDot2"></span>
+                </div>
+                <button class="nav-arrow nav-arrow-right" id="navArrowRight" onclick="flipTrackTipPage(1)">NISCs ›</button>
+            </div>
             <div class="track-tip-body">
-                <div class="track-tip-placeholder">
-                    <p>Track information will be displayed here.</p>
-                    <p>This is a placeholder for future track tips and strategies.</p>
+                <!-- Page 1: Strategy & Item Use Tips -->
+                <div class="track-tip-page active" id="trackTipPage1">
+                    <div class="strategy-section">
+                        <h3>🎯 Strategy</h3>
+                        <div class="strategy-content" id="strategyContent">
+                            <p>Strategy tips will be displayed here.</p>
+                        </div>
+                    </div>
+                    <div class="item-tips-section">
+                        <h3>🎁 Item Use Tips</h3>
+                        <div class="item-tips-content" id="itemTipsContent">
+                            <p>Item use tips will be displayed here.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Page 2: Important NISCs -->
+                <div class="track-tip-page" id="trackTipPage2">
+                    <div class="shortcuts-section">
+                        <h3>⚡ Important NISCs</h3>
+                        <div class="shortcuts-content" id="shortcutsContent">
+                            <p>Important no-item shortcuts will be displayed here.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
