@@ -1,6 +1,6 @@
 # MKWorld Tracker
 
-A modern, feature-rich web application for tracking Mario Kart Wii (MKW) race sessions. Perfect for competitive players, streamers, and anyone who wants to keep detailed records of their racing sessions.
+A modern, feature-rich web application for tracking Mario Kart World (MKW) race sessions. Perfect for competitive players, streamers, and anyone who wants to keep detailed records of their racing sessions.
 
 ![MKWorld Tracker](https://img.shields.io/badge/MKWorld-Tracker-blue?style=for-the-badge)
 ![Version](https://img.shields.io/badge/version-2.0-green?style=for-the-badge)
@@ -9,7 +9,7 @@ A modern, feature-rich web application for tracking Mario Kart Wii (MKW) race se
 ## ✨ Features
 
 ### 🎯 Core Functionality
-- **Track Management**: All 30 Mario Kart Wii tracks with high-quality images
+- **Track Management**: All 30 Mario Kart World tracks with high-quality images
 - **Session Tracking**: Create and manage multiple racing sessions
 - **Global Favorites**: Star tracks you love - favorites persist across all sessions
 - **Smart Zoom**: Automatically keeps tracks as large as possible without scrollbars
@@ -143,7 +143,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **Mario Kart Wii** - Nintendo for creating an amazing racing game
+- **Mario Kart World** - Nintendo for creating an amazing racing game
 - **Track Images** - Community-sourced high-quality track images
 - **Discord Community** - For feedback and feature requests
 
@@ -156,6 +156,6 @@ If you encounter any issues or have questions:
 
 ---
 
-**Made with ❤️ for the Mario Kart Wii community**
+**Made with ❤️ for the Mario Kart World community**
 
 *Happy racing! 🏁*

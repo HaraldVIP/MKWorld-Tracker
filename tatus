@@ -1,0 +1,12 @@
+warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'css/themes.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'js/dataStorage.js', LF will be replaced by CRLF the next time Git touches it
+README.md
+css/styles.css
+css/themes.css
+index.html
+js/dataStorage.js
+js/main.js
+js/sessionManager.js
+js/trackManager.js
+js/uiControls.js

@@ -8,7 +8,10 @@
     <link rel="stylesheet" href="css/themes.css">
 </head>
 <body data-theme="dark">
-    <div class="credit">Made by Harald VIP</div>
+    <div class="credit">
+        <div class="credit-line-1">Made by</div>
+        <div class="credit-line-2">Harald VIP</div>
+    </div>
     <button class="theme-button top-right" onclick="toggleTheme()">☀️ Light Mode</button>
     <button class="help-button" onclick="toggleHelp()" title="Help">❓</button>
     
@@ -46,6 +49,7 @@
                 <div class="sort-controls">
                     <button class="sort-button active" id="sortAlphabetical" onclick="setSortMode('alphabetical')">A-Z</button>
                     <button class="sort-button" id="sortStarred" onclick="setSortMode('starred')">⭐ Favorited</button>
+                    <button class="sort-button" id="sortRemaining" onclick="setSortMode('remaining')">Remaining</button>
                 </div>
             </div>
             <div class="center-controls">
@@ -58,13 +62,19 @@
                 </div>
             </div>
             <div class="right-controls">
-                <button class="zoom-toggle-button" id="zoomToggleBtn" onclick="toggleAutoZoom()">🔍 Zoom to Fit</button>
-                <div class="manual-zoom-controls" id="manualZoomControls" style="display: none;">
-                    <span class="zoom-indicator">🔍</span>
-                    <input type="range" class="size-slider" id="sizeSlider" min="0.5" max="5" step="0.1" value="3" oninput="adjustSize(this.value)">
+                <div class="top-controls">
+                    <button class="track-tip-toggle-button" id="trackTipToggleBtn" onclick="toggleTrackTipMode()">💡 Track Tips</button>
+                    <button class="zoom-toggle-button" id="zoomToggleBtn" onclick="toggleAutoZoom()">🔍 Zoom to Fit</button>
+                    <button class="stats-button" onclick="showStats()" title="View track statistics">📊 Stats</button>
                 </div>
-                <button class="stats-button" onclick="showStats()" title="View track statistics">📊 Stats</button>
-                <button class="discord-copy-button" onclick="copyDiscordCodes()" title="Copy completed tracks for Discord">📋 Copy played tracks</button>
+                <div class="bottom-controls">
+                    <div class="manual-zoom-controls" id="manualZoomControls" style="display: none;">
+                        <span class="zoom-indicator">🔍</span>
+                        <input type="range" class="size-slider" id="sizeSlider" min="0.5" max="5" step="0.1" value="3" oninput="adjustSize(this.value)">
+                    </div>
+                    <button class="discord-copy-button" onclick="copyDiscordCodes()" title="Copy completed tracks for Discord">📋 Copy played tracks</button>
+                    <button class="tips-button" onclick="openTipsForm()" title="Help gather track tips and shortcuts">💡 Help gather track tips!</button>
+                </div>
             </div>
         </div>
     </div>
@@ -91,6 +101,7 @@
                 <ul>
                     <li><strong>Save different play sessions</strong> to track your racing progress</li>
                     <li><strong>Set placements</strong> for completed tracks (1st-12th place)</li>
+                    <li><strong>Quick placement selection</strong> - Click the placement button to open a grid, or use keyboard shortcuts (1-9, 0 for 10th, - for 11th, = for 12th)</li>
                     <li><strong>Add notes</strong> to remember details about each race</li>
                     <li><strong>Import/Export</strong> sessions to share with others</li>
                     <li><strong>Score calculation</strong> - Automatic scoring based on placements</li>
@@ -128,6 +139,22 @@
                 </div>
                 <div class="stats-tracks" id="statsTracks">
                     <!-- Track statistics will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Track Tip Modal -->
+    <div class="track-tip-modal" id="trackTipModal">
+        <div class="track-tip-content">
+            <div class="track-tip-header">
+                <h2 id="trackTipTitle">Track Tips</h2>
+                <button class="track-tip-close" onclick="closeTrackTip()">&times;</button>
+            </div>
+            <div class="track-tip-body">
+                <div class="track-tip-placeholder">
+                    <p>Track information will be displayed here.</p>
+                    <p>This is a placeholder for future track tips and strategies.</p>
                 </div>
             </div>
         </div>

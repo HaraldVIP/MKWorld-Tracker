@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Test</title>
+    <style>
+        .test-track-item {
+            width: 200px;
+            height: 150px;
+            background-color: #2d2d2d;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: visible;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
+            box-sizing: border-box;
+            border: 2px solid transparent;
+            z-index: 1;
+            margin: 20px;
+            color: #e0e0e0;
+        }
+
+        /* Click animations for track items */
+        .test-track-item:active {
+            transform: scale(0.95) !important;
+        }
+
+        .test-track-item.clicking {
+            transform: scale(0.95) !important;
+        }
+
+        .test-track-item.clicked {
+            transform: scale(1) !important;
+        }
+
+        .test-track-item:hover:not(:active):not(.clicked):not(.clicking) {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body style="background-color: #1a1a1a; padding: 50px;">
+    <h1 style="color: #e0e0e0; text-align: center;">Click Animation Test</h1>
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
+        <div class="test-track-item" id="testTrack">
+            <h3>Test Track</h3>
+            <p>Click me to test the animation!</p>
+        </div>
+    </div>
+
+    <script>
+        const trackItem = document.getElementById('testTrack');
+        
+        // Add mouse down event for immediate visual feedback
+        trackItem.addEventListener('mousedown', (e) => {
+            // Only handle left mouse button
+            if (e.button === 0) {
+                trackItem.classList.add('clicking');
+            }
+        });
+        
+        // Add mouse up event to remove clicking class
+        trackItem.addEventListener('mouseup', (e) => {
+            if (e.button === 0) {
+                trackItem.classList.remove('clicking');
+            }
+        });
+        
+        // Add mouse leave event to remove clicking class if mouse leaves while pressed
+        trackItem.addEventListener('mouseleave', () => {
+            trackItem.classList.remove('clicking');
+        });
+        
+        trackItem.addEventListener('click', (e) => {
+            // Prevent default to avoid any browser default click behavior
+            e.preventDefault();
+            
+            // Add clicked class for instant visual feedback
+            trackItem.classList.add('clicked');
+            
+            // Remove clicked class immediately
+            trackItem.classList.remove('clicked');
+            
+            console.log('Track clicked!');
+        });
+    </script>
+</body>
+</html>
